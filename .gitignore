@@ -1,0 +1,6 @@
+temp/
+*.rds
+*.RDS
+original_*
+*.png
+old/
