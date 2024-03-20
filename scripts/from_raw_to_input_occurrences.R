@@ -1,5 +1,5 @@
 rcmed.points <- read.csv(paste0(wd,'data/',expname,'_','rcmed_abundance_compact.csv'))
-# Define the data from aBoujadira et al. (2010) in an appropriate format to be transformed into decimal
+# Define the data from Boujadira et al. (2010, doi: 10.3391/ai.2010.5.S1.020) in an appropriate format to be transformed into decimal 
 Boujadira_df <- data.frame( 
   Location = c("Tamentfoust", "Sidi-Fredj", "Bou Ismail", "Salamandre Station 1", "Station 2", "Station 3", "Station 4", "Stidia Station 1", "Station 2", "Station 3", "Station 4"),
   Latitude  = c("36 48 29.64", "36 45 55.2", "36 41 39.23", "35 55 12.46", "35 55 11.62", "35 55 08.07", "35 55 06.15", "35 50 1.45", "35 50 2.29", "35 50 3.96", "35 50 4.22"),
@@ -24,7 +24,7 @@ occs.sp <- vect(occs.original,geom = c('decimalLongitude', 'decimalLatitude'),cr
 occs.p <- project(occs.sp, eckertIV)
 
 # add easin points
-easin.original <- vect(paste0(wd,'data/','easin-layer-export-2024-02-25.json'))
+easin.original <- vect(paste0(wd,'data/','easin-layer-export.json'))
 easin.p <- project(easin.original, eckertIV)
 easin.r <- mask(envs.final, easin.p)
 easin.pts <- as.data.frame(easin.r, xy=T)[,c('x','y')]
