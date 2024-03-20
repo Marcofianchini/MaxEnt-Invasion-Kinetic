@@ -33,12 +33,7 @@ easin.p <- vect(easin.pts, geom = c('x','y'), crs =eckertIV)
 # 
 occs.final <- rbind(occs.p,easin.p, Boujadira.pts)
 occs.final <- crop(occs.final, envs.final)
-# adjust points to raster, function to compute it is in the 'functions' script
-#occs.adjusted<- adjustPointsToRasterMultilayer(occs.final, envs.final,2000) # 2000 is roughly half of the cell side
-#write.csv(occs.adjusted, paste0(wd,'data/','occurrences_adjusted_resume.csv'), row.names = FALSE)
-#occs.adjusted.sp <- na.omit(occs.adjusted)[,c('new_x','new_y')]
-#names(occs.adjusted.sp) <- c('x','y')
-#occs.adjusted.sp <- vect(occs.adjusted.sp,geom=c('x','y'), crs = eckertIV)
+
 # keep points that are inside the raster 
 occs.filtered <- terra::extract(envs.final, occs.final, xy = TRUE)
 occs.df <- data.frame(na.omit(occs.filtered)[,c('x','y')],Observed=1)
