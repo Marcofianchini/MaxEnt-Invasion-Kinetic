@@ -87,3 +87,31 @@ if(!require('rSDM')){
   devtools::install_github("Pakillo/rSDM")
   library(rSDM)
 }
+
+if(!require('tidyterra')){
+  install.packages('tidyterra', dependencies = TRUE)
+  library(tidyterra)
+}
+
+if(!require('urca')){
+  install.packages('urca', dependencies = TRUE)
+  library(urca)
+}
+if(!require('Kendall')){
+  install.packages('Kendall', dependencies = TRUE)
+  library(Kendall)
+}
+if(!require('topsis')){
+  install.packages('topsis', dependencies = TRUE)
+  library(topsis)
+}
+
+if(!require('measurements')){
+  install.packages('measurements',dependencies= TRUE)
+  library(measurements)
+}
+
+if(!require('automap')){
+  install.packages('automap', dependencies = TRUE)
+  library(automap)
+  }
