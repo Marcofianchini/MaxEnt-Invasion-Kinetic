@@ -12,7 +12,7 @@ Actions that will be performed are:
 4) Import and cleaning of the RCMED dataset 
 5) Import and cleaning of the occurrences dataset used in the cross-validation setup
 6) Spatial autocorrelation analysis and generation of the site-weighting 
-7) Model tuning (follow the instruction inside the script, some user interaction is required in this point to make it works properly) 
+7) Model tuning (follow the instruction inside the script, some user interaction is required in this point to make it works properly) + Partial ROC AUC analysis
 8) TOPSIS analysis to rank the models
 9) Identification of the best model 
 10) Variable Importance Analysis
