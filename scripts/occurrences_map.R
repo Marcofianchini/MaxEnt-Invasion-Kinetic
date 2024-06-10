@@ -1,9 +1,11 @@
-pal <- c('1' =  "#009E73", '2' = "#E69F00", '3' = "#D55E00")
+pal <- c('1' =  "#CC79A7", '2' = "#E69F00", '3' = "#D55E00")
 
 
-# Read data
-occs.p <- read.csv(paste0(wd,'data/',expname,'_', 'occurrences_counts.csv'))
-rcmed.p <- read.csv(paste0(wd,'data/',expname,'_', 'rcmed_abundance_compact.csv')) 
+# Read 
+med_mask<-rgdal::readOGR(paste0('shapefiles/',"med_mask.shp"))
+med_mask<-terra::project(vect(med_mask),eckertIV)
+occs.p <- read.csv(paste0('data/',expname,'_', 'occurrences_counts.csv'))
+rcmed.p <- read.csv(paste0('data/',expname,'_', 'rcmed_abundance_compact.csv')) 
 
 
 # Adjust color assignment for rcmed.p based on measurementValue
@@ -17,11 +19,11 @@ r<- rast(envs.final[[1]], vals = 1)
 r<-mask(r,envs.final[[1]])
 r.v <- as.polygons(r, crs = eckertIV, dissolve = TRUE)
 
-png(paste0(wd,'plots/', 'point_map.png'), width = 1600,height=900)
+png(paste0('plots/', 'point_map.png'), width = 1600,height=900)
 p3 <- ggplot(r) +
   geom_spatvector(data = med_mask, color = NA, fill = blues9[3],alpha=1, linewidth = 1) +
   geom_spatvector(data = r.v, fill = blues9[6], color = 'grey20', linewidth=1.1) +
-  geom_spatvector(data = med_msfd, fill = NA, color = 'grey10', linewidth = 1.5) +
+  #geom_spatvector(data = med_msfd, fill = NA, color = 'grey10', linewidth = 1.5) +
   geom_point(data = occs.p,aes (x=x,y=y, fill = as.factor(col)),color = alpha('black',0.1), size = 3, shape = 22, alpha=0.85) +
   geom_point(data = rcmed.p,aes(x=x,y=y, fill = as.factor(col)),color = 'black', size = 4.5, shape = 23,alpha=0.9) +
   theme_minimal() + 
