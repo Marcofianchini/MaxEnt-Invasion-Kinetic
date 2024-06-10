@@ -1,35 +1,30 @@
-# helper functions
-#file.edit(paste0(wd,'scripts/','improved_Stationarity_function.R'))
-source(paste0(wd,'scripts/','improved_Stationarity_function.R'))
+# helper function 
+calculate_area <- function(raster, value ) {
+  # Get the number of layers
+  nlayers <- nlyr(raster)
+  
+  # Initialize a vector to store the areas
+  areas <- numeric(nlayers)
+  
+  # Loop through the layers and calculate the area for each one
+  for (i in 1:nlayers) {
+    layer <- raster[[i]]
+    print(sum(values(layer == value),na.rm = T))
+    areas[i] <- sum(values(layer == value),na.rm = T) * res(layer)[1] * res(layer)[2]
+  }
+  
+  return(areas)
+}
 
 ####################################
 rf_classified.original<-best_yearly_prediction_maps
-rf_classified_base.original<-c(scenario_predicted_map$OR10p_present_scenario,scenario_predicted_map$OR10p_future_scenario)
+rf_classified_base.original<-c(scenario_predicted_map$p_present_scenario,scenario_predicted_map$p_future_scenario)
 fnm<-rev(c('high','medium','low','no'))
-threshold <- "Maximum.training.sensitivity.plus.specificity.Cloglog.threshold"
-maxSSS <- bestmod@results[threshold,]
-maxSSS.values <- c(e.mx@results.partitions %>% filter(tune.args == bestopt$tune.args) %>% select(threshold_value) %>% unlist(), maxSSS)
-# compute median absolute difference of maxSSS.values
-maxSSS.mad <- mad(maxSSS.values, constant = 1) 
-th<-maxSSS
-thr <- round(th, 2)
-th_lower <- th + maxSSS.mad
-th_upper <- th - maxSSS.mad
-int_mx<-matrix(c(0,th/3,0,
-                 th/3,2*th/3,1,
-                 2*th/3,th,2,
-                 th,1,3),
-               ncol=3, byrow=T)
-int_mx_lower<-matrix(c(0,th_lower/3,0,
-                       th_lower/3,2*th_lower/3,1,
-                       2*th_lower/3,th_lower,2,
-                       th_lower,1,3),
-                     ncol=3, byrow=T)
-int_mx_upper<-matrix(c(0,th_upper/3,0,
-                       th_upper/3,2*th_upper/3,1,
-                       2*th_upper/3,th_upper,2,
-                       th_upper,1,3),
-                     ncol=3, byrow=T)
+
+# read the classification matrices 
+int_mx <- readRDS(paste0('results/',expname,'_','int_mx.rds'))
+int_mx_lower <- readRDS(paste0('results/',expname,'_','int_mx_lower.rds'))
+int_mx_upper <- readRDS(paste0('results/',expname,'_','int_mx_upper.rds'))
 
 rf_classified_base<- as.factor(terra::classify(rf_classified_base.original,int_mx, include.lowest = T, right = T))
 rf_classified_base_lower<- as.factor(terra::classify(rf_classified_base.original,int_mx_lower, include.lowest = T, right = T))
@@ -71,7 +66,7 @@ for(i in 1:nlyr(rf_classified)) {
   levels(layer_upper) <- data.frame(ID=0:3,label=level_names)
   
   
-  # Replace the original layer with the renamed one
+  # Replace
   rf_classified[[i]] <- layer
   rf_classified_lower[[i]] <- layer_lower
   rf_classified_upper[[i]] <- layer_upper
@@ -317,7 +312,9 @@ future_lower <- rf_classified_base_lower$future
 ################################################################################################################
 ################################################################################################################
 ################################################################################################################
-
+cl.names <- c("no suitability", "low suitability", "medium suitability", "high suitability")
+class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow','bluishgreen','blue')])
+class_colors.n <- setNames(class_colors,cl.names)
 
 for(i in 1:4){
   print(level_names[i])
@@ -357,67 +354,45 @@ for(i in 1:4){
   yf_lower <- pf_lower[[level_names[i]]][2]
   yp.label <- yp
   yf.label <- yf
+  ymin_val <- min(data$Area_km2)*0.9
+  ymax_val <- max(data$Area_km2)*1.1
   if(i == 4){
     x.to.dodge <-2037
     y.to.dodge <- max(pv$v) + 0.2 * max(pv$v)
     xp.label <- 2010
     xf.label <- 2040
+    yp.label <- ymax_val 
   } else if(i == 2){
-    x.to.dodge <- 2012
-    y.to.dodge <- max(pv$v)
+    x.to.dodge <- 2037
+    y.to.dodge <- max(pv$v) - 0.05 * max(pv$v)
     xp.label <- 2010
     xf.label <- 2040
-    yp.label <- yp +0.01 * yp
+    yp.label <- ymax_val
   } else if(i == 3){
     #x.to.dodge <- 2010
     #y.to.dodge <- min(pv$v) + 0.5 * min(pv$v)
     #xp.label <- 2010
     #xf.label <- 2040
     x.to.dodge <-2037
-    y.to.dodge <- max(pv$v)
+    y.to.dodge <- yp
     xp.label <- 2010
     xf.label <- 2040
-    yp.label <- yp -0.03 * yp
+    yp.label <- ymax_val
   } else if(i == 1){
     x.to.dodge <- 2037
-    y.to.dodge <- min(pv$v) + 1.5 * min(pv$v)
+    y.to.dodge <- yp
     xp.label <- 2010
     xf.label <- 2040
-    yp.label <- yp +0.05 * yp
-    yf.label <- yf +0.03 * yf
+    yp.label <- yp 
+    yf.label <- ymax_val
     
   }
   ########
-  urca_res<-stationarity_test(pv$v, max_lag = 10)
-  if (!is.na(urca_res)[1]) {
-    text <- paste0(
-      "adf: ", urca_res$type, "\n",
-      "Lag: ", urca_res$lag, " ",
-      "Tau: ", round(urca_res$tau, 2), "\n"
-    )
-    
-    if (urca_res$type == "Trend-stationary") {
-      text <- paste0(
-        text,
-        "Phi2: ", round(urca_res$phi2, 2), " ",
-        "Phi3: ", round(urca_res$phi3, 2), "\n"
-      )
-    }
-    text <- paste0(text,"P[H0]: <", urca_res$significance, "\n")
-  } else {
-    text <- "No stationarity detected"
-  }
-  
   
   # Generate a sequence of breaks
   y_range <- round(1*range(pv$v),0)
-  adj.yf <-  max(pv$v) + 0.06 * max(pv$v)
-  if(level_names[i] == 'medium suitability'){
-    adj.yf<-1.3*max(pv$v)
-  }
-  if(level_names[i] == 'high suitability'){
-    adj.yf<-1.6*max(pv$v)
-  }
+   
+  adj.yf = ymax_val
   # Create the plot
   p <- ggplot(data, aes(x = Year, y = Area_km2, color = Level)) +
     geom_line(aes(y = Fitted), color = class_colors.n[level_names[i]],linewidth=1.8,alpha=0.6, linetype=5) +
@@ -442,14 +417,8 @@ for(i in 1:4){
                  color = alpha("darkred",0.01), size = 0.6, linetype=1,alpha=0.3) +
     geom_segment(aes(x = 2030, y = yf_upper, xend = 2050, yend = yf_upper),
                  color = alpha("darkred",0.01), size = 0.6, linetype=1, alpha = 0.3) +
-    geom_label(label.padding = unit(0.15,'lines'), size = 8,fontface=2,aes(x = xp.label, y = yp.label), 
-               color = "darkblue", label = 'present',bg = 'white') +
-    geom_label(label.padding = unit(0.15,'lines'), size = 8, fontface = 2 ,aes(x = xf.label, y = yf.label), 
-               color = "darkred",label = 'future',bg = 'white') +
-    geom_label(label.size=0,color='black',fill = alpha('grey99',1),position =  'dodge2',aes(x = x.to.dodge , y = y.to.dodge, 
-                                                                                            label = paste0(text,paste0("Kendall ", "tau:", round(k.fit$tau, 2), " p-val:", formatC(k.fit$sl, digits = 2, format = 'e')))), size = 15) +
-    #geom_text(color='black',position =  'dodge2',aes(x = 2010, y = min(pv$v) - 0.01 * min(pv$v),
-    #                                                 label =  +
+    geom_label(label.size=0,color='black',fill = alpha('grey99',1),position =  'dodge2',aes(x = x.to.dodge , y = adj.yf, 
+                                                                                            label = paste0(paste0("Kendall ", "tau:", round(k.fit$tau, 2), " p-val:", formatC(k.fit$sl, digits = 2, format = 'e')))), size = 15) +
     geom_label(color = class_colors.n[level_names[i]],fill='white',label.size = 0,position =  'dodge2',aes(x = 2008, y = adj.yf,
                                                                                                           label = level_names[i]), size = 20) +
     geom_point(size = 6) +  # Plot points
@@ -459,14 +428,10 @@ for(i in 1:4){
           axis.text = element_text(size = 30, face = "bold"), # Bigger, bold axis text
           axis.title = element_text(size = 48,face = "bold"), # Bold axis titles
     ) +
-    scale_y_continuous(labels=function(x) scales::scientific(x,digits=2), n.breaks = NULL)
-  #p <- p +  geom_rect(aes(xmin = 2000, xmax = 2020, ymin = yp_upper, ymax = yp_lower),color=NA,fill= alpha("blue",0.01),alpha = 0.01) +
-  #  geom_rect(aes(xmin = 2030, xmax = 2050, ymin = yf_upper, ymax = yf_lower),fill= alpha("red",0.01),  color=NA, alpha = 0.01) 
+    scale_y_continuous(labels=function(x) scales::scientific(x,digits=2),limits = c(ymin_val, ymax_val), n.breaks = 5)
   
-  png(paste0(wd,'plots/',fnm[i],'_plot.png'), width = 1600, height = 1200)
+  png(paste0('plots/',fnm[i],'_plot.png'), width = 1600, height = 1200)
   print(p)
   dev.off()
 }
 
-class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow','bluishgreen','blue')])
-class_colors.n <- setNames(class_colors,cl.names)
