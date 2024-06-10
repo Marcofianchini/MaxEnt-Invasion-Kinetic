@@ -1,27 +1,27 @@
 print('Computing response curves')
-bestopt <- e.mx@results %>% filter(or.10p.avg == min(or.10p.avg, na.rm = T)) %>% first()
-bestmod <- e.mx@models[[bestopt$tune.args]]
+bestmod <- readRDS(paste0('results/',expname,'_','bestmod.rds'))
+bestopt <- readRDS(paste0('results/',expname,'_','bestopt.rds'))
 a <- list()
 
 for(nm in names(envs.final)){
-  if(!file.exists(paste0(wd,'results/',expname,'_','allresponses_',nm,'.RDS'))){
+  #if(!file.exists(paste0('results/',expname,'_','allresponses_',nm,'.RDS'))){
     for(i in 1:nrow(e.mx@results)){
       a[[names(e.mx@models)[i]]]<-dismo::response(e.mx@models[[i]],var=nm, range = 'pa',expand=0)
     }
-    saveRDS(a,paste0(wd,'results/',expname,'_','allresponses_',nm,'.RDS'))
-  }
+    saveRDS(a,paste0('results/',expname,'_','allresponses_',nm,'.RDS'))
+  #}
+  gc()
   print(paste0(nm,' DONE!'))
 }
-xlims <- read.csv(paste0(wd,'data/',expname,'_','variable_ranges.csv'),)
+xlims <- read.csv(paste0('data/',expname,'_','variable_ranges.csv'),)
 rownames(xlims)<-names(envs.final)
 xlims['mean_no3',]<-c(0,1.5)
-vunit <- c('.','.','.','.','PSU','°C','m/s','mmol/m^3','mmol/m^3','.','mmol/m^3','mg/m-2/day-1','PSU','.','.')
+vunit <- c('°C','°C','PSU','mmol/m^3','mg/m-2/day-1','m/s','.','.')
 vunit <- setNames(vunit,names(envs.final))
 
 #create extended names for titles from names(envs.final)
-extended.names <- c('Water Velocity variance','Ammonium concentration variance', 'Phosphate variance',
-                    'Salinity variance','Maximum Salinity','Maximum Temperature','Mean Water Velocity',
-                    'Mean Ammonium concentration','Mean Nitrate concentration','Mean pH','Mean Phosphate concentration','Minimum Net Primary Production','Salinity range','EUNIS biozone','EUNIS substrate')
+extended.names <- c('Maximum temperature','Minimum temperature','Maximum salinity','Mean phosphate concentration','Mean net primary production','Minimum Water Velocity',
+                    'EUNIS biozone','EUNIS substrate')
 
 extended.names <- setNames(extended.names,names(envs.final))
 c <- 0
@@ -29,7 +29,7 @@ vnm <- names(envs.final)
 vnm <- vnm[!vnm %in% c('biozone','substrate')]
 for(nm in vnm){
   
-  a<- readRDS(paste0(wd,'results/',expname,'_','allresponses_',nm,'.RDS'))
+  a<- readRDS(paste0('results/',expname,'_','allresponses_',nm,'.RDS'))
   bestline.OR10p<-dismo::response(e.mx@models[[bestopt$tune.args]],var=nm,range = 'pa',expand=0)
   # Each data frame should have two columns, for x and y values
   df<-lapply(a, function(x) as.data.frame(x))
@@ -68,9 +68,10 @@ for(nm in vnm){
       title = element_text(size = 38,face='bold')
     )
   
-  png(paste0(wd,'plots/',expname,'_',nm,'.png'),width = 1600, height = 900)
+  png(paste0('plots/',expname,'_',nm,'.png'),width = 1600, height = 900)
   print(p)
   dev.off()
+  print(paste0(nm,' plot DONE!'))
 }
 
 
@@ -79,10 +80,10 @@ for(nm in vnm){
 
 # EUNIS_biozone variable
 nm <- 'biozone'
-biozone_legend <-read.csv(paste0(wd,'results/',expname,'_','biozone_legend.csv'))
-a<- readRDS(paste0(wd,'results/',expname,'_','allresponses_',nm,'.RDS'))
-bestpoint.OR10p<-as.data.frame(dismo::response(e.mx@models[[bestopt$tune.args]],var=nm,range = 'pa',expand=0))
-names(bestpoint.OR10p)<-c('V1','p')
+biozone_legend <-read.csv(paste0('data/','biozone_legend.csv'))
+a<- readRDS(paste0('results/',expname,'_','allresponses_',nm,'.RDS'))
+bestpoint<-as.data.frame(dismo::response(e.mx@models[[bestopt$tune.args]],var=nm,range = 'pa',expand=0))
+names(bestpoint)<-c('V1','p')
 # Each data frame should have two columns, for x and y values
 df<-lapply(a, function(x) as.data.frame(x))
   
@@ -90,11 +91,11 @@ df<-lapply(a, function(x) as.data.frame(x))
   df_combined <- dplyr::bind_rows(df, .id = "id")
   # remove the levels missclassified (4,5)
   df_combined<-df_combined[!df_combined$V1 %in% c(4,5),]
-  bestpoint.OR10p<-bestpoint.OR10p[!bestpoint.OR10p$V1 %in% c(4,5),]
+  bestpoint<-bestpoint[!bestpoint$V1 %in% c(4,5),]
   
 p <- ggplot(df_combined, aes(x = as.factor(V1), y = p)) +
   geom_violin(color = "black",fill = blues9[5], alpha = 0.55) + 
-  geom_point(data = as.data.frame(bestpoint.OR10p), aes(x = as.factor(V1), y = p), color = 'red', size = 5) + # Add the best model
+  geom_point(data = as.data.frame(bestpoint), aes(x = as.factor(V1), y = p), color = 'red', size = 5) + # Add the best model
   labs(
     title = paste0(extended.names[nm], ' (importance: ', round(bestmod@results[paste0(nm,'.permutation.importance'),],2),')'),    # Add a title
     #x = paste0(nm,' [ ',vunit[nm],' ]'),  # Add x-axis label
@@ -111,7 +112,7 @@ p <- ggplot(df_combined, aes(x = as.factor(V1), y = p)) +
   ) + scale_x_discrete(labels = biozone_legend$category )  
   # Setting x-axis ticks to display names
 
-  png(paste0(wd,'plots/',expname,'_',nm,'.png'),width = 1600, height = 900)
+  png(paste0('plots/',expname,'_',nm,'.png'),width = 1600, height = 900)
   print(p)
   
   dev.off()
@@ -119,12 +120,12 @@ p <- ggplot(df_combined, aes(x = as.factor(V1), y = p)) +
 ###############################################
 ###############################################
   nm <- 'substrate'
-  substrate_legend <-read.csv(paste0(wd,'results/',expname,'_','substrate_legend.csv'))
+  substrate_legend <-read.csv(paste0('data/','substrate_legend.csv'))
   substrate_legend$category[11]<- 'Fine or Sandy mud or Muddy sand' # shorten the name to fit the plot
   substrate_legend$category[10]<- 'Coral. Platform' # shorten the name to fit the plot
-  a<- readRDS(paste0(wd,'results/',expname,'_','allresponses_',nm,'.RDS'))
-  bestpoint.OR10p<-as.data.frame(dismo::response(e.mx@models[[bestopt$tune.args]],var=nm,range = 'pa',expand=0))
-  names(bestpoint.OR10p)<-c('V1','p')
+  a<- readRDS(paste0('results/',expname,'_','allresponses_',nm,'.RDS'))
+  bestpoint<-as.data.frame(dismo::response(e.mx@models[[bestopt$tune.args]],var=nm,range = 'pa',expand=0))
+  names(bestpoint)<-c('V1','p')
   # Each data frame should have two columns, for x and y values
   df<-lapply(a, function(x) as.data.frame(x))
   
@@ -132,12 +133,12 @@ p <- ggplot(df_combined, aes(x = as.factor(V1), y = p)) +
   df_combined <- dplyr::bind_rows(df, .id = "id")
   # keep only the relevant substrates
   df_combined<-df_combined[!df_combined$V1 %in% c(1),]
-  bestpoint.OR10p<-bestpoint.OR10p[!bestpoint.OR10p$V1 %in% c(1),]
+  bestpoint<-bestpoint[!bestpoint$V1 %in% c(1),]
   
   
   p <- ggplot(df_combined, aes(x = as.factor(V1), y = p)) +
     geom_violin(color = "black",fill = blues9[5], alpha = 0.55) + # Using the merged dataframe directly
-    geom_point(data = as.data.frame(bestpoint.OR10p), aes(x = as.factor(V1), y = p), color = 'red', size = 5) + # Add the best point
+    geom_point(data = as.data.frame(bestpoint), aes(x = as.factor(V1), y = p), color = 'red', size = 5) + # Add the best point
     labs(
       title = paste0(extended.names[nm], ' (importance: ', round(bestmod@results[paste0(nm,'.permutation.importance'),],2),')'),    # Add a title
       #x = paste0(nm,' [ ',vunit[nm],' ]'),  # Add x-axis label
@@ -155,7 +156,7 @@ p <- ggplot(df_combined, aes(x = as.factor(V1), y = p)) +
   
     # Setting x-axis ticks to display names
     
-    png(paste0(wd,'plots/',expname,'_',nm,'.png'),width = 1600, height = 900)
+    png(paste0('plots/',expname,'_',nm,'.png'),width = 1600, height = 900)
   print(p)
   
   dev.off()
