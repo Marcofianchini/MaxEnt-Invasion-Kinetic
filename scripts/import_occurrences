@@ -1,0 +1,107 @@
+######################################################################################################
+# This script import/download Caulerpa cylindracea occurrences from different sources and gather them together to be used in the analysis
+
+rcmed.points <- read.csv(paste0('data/',expname,'_','rcmed_abundance_compact.csv'))
+# Define the data from Boujadira et al. (2010, doi: 10.3391/ai.2010.5.S1.020) in an appropriate format to be transformed into decimal 
+Boujadira_df <- data.frame( 
+  Location = c("Tamentfoust", "Sidi-Fredj", "Bou Ismail", "Salamandre Station 1", "Station 2", "Station 3", "Station 4", "Stidia Station 1", "Station 2", "Station 3", "Station 4"),
+  Latitude  = c("36 48 29.64", "36 45 55.2", "36 41 39.23", "35 55 12.46", "35 55 11.62", "35 55 08.07", "35 55 06.15", "35 50 1.45", "35 50 2.29", "35 50 3.96", "35 50 4.22"),
+  Longitude = c("03 13 52.56", "02 50 50.82", "02 47 50.67", "00 03 28.32", "00 03 28.30", "00 03 27.20", "00 03 27.09", "00 00 49.79", "00 00 49.12", "00 00 48.94", "00 00 47.30")
+)
+
+Boujadira_decimalLongitude <- as.numeric(measurements::conv_unit(Boujadira_df$Longitude,from='deg_min_sec', to = "dec_deg"))
+Boujadira_decimalLatitude <- as.numeric(measurements::conv_unit(Boujadira_df$Latitude,from='deg_min_sec', to = "dec_deg"))
+Boujadira_points <- data.frame(Boujadira_decimalLongitude, Boujadira_decimalLatitude,year = 2010)
+colnames(Boujadira_points)<-c("decimalLongitude","decimalLatitude",'year')
+Boujadira.pts<- vect(Boujadira_points,geom= c('decimalLongitude','decimalLatitude'),crs='EPSG:4326')
+Boujadira.p <- project(Boujadira.pts, eckertIV)
+Boujadira.p <- rSDM::points2nearestcell(as(Boujadira.p,'Spatial'), raster(envs.final$biozone), distance = sqrt(2)*res(envs.final)[1], showmap = F)
+Boujadira.p <- vect(Boujadira.p)
+# Define the data from Nora Ould-Ahmed and A. Meinesz (2007) 
+Ould_pt<-as.data.frame(
+  rbind(c(-0.564517,35.768179),
+        c(-1.209516,35.533442),
+        c(-0.158484,35.793556),
+        c(-0.336123,35.905638),
+        c(3.089842,36.757308),
+        c(3.009842,36.757308),
+        c(11.133149,34.658983)
+  )
+)
+Ould_pt <- cbind(Ould_pt,year = 2007)
+colnames(Ould_pt)<-c("decimalLongitude","decimalLatitude","year")
+Ould_pt<-vect(Ould_pt,geom = c('decimalLongitude','decimalLatitude'),crs = 'EPSG:4326')
+Ould.p<-project(Ould_pt,eckertIV)
+Ould.p <- rSDM::points2nearestcell(as(Ould.p,'Spatial'), raster(envs.final$biozone), distance = sqrt(2)*res(envs.final)[1], showmap = F)
+Ould.p <- vect(Ould.p)
+
+# keep coordinates and year of observation. filter years after 2020
+occs.original <- read.delim(paste0('data/',"0004580-240216155721649/0004580-240216155721649.csv"))
+occs.original <- occs.original %>% filter(!is.na(decimalLatitude) & !is.na(decimalLongitude) & !is.na(year))
+#occs.original <- occs.original %>% filter(year <= 2020)
+occs.original <- occs.original %>% select(decimalLongitude, decimalLatitude, year)
+# keep only that columns
+occs.sp <- vect(occs.original,geom = c('decimalLongitude', 'decimalLatitude'),crs = 'EPSG:4326')
+occs.p <- project(occs.sp, eckertIV)
+occs.p <- rSDM::points2nearestcell(as(occs.p,'Spatial'), raster(envs.final$biozone), distance = sqrt(2)*res(envs.final)[1], showmap = F)
+occs.p <- vect(occs.p)
+
+#EASIN species occurrence download 
+# instruction at https://easin.jrc.ec.europa.eu/apixg
+library(httr)
+library(jsonlite)
+
+speciesid<-'R18228'  # Caulerpa cylindracea 
+take<-1000 # EASIN limits to 1000 occurrences download each time
+skip<-0
+
+baseurl<- "https://easin.jrc.ec.europa.eu/apixg/geoxg/"
+call<-paste0(baseurl, "/",speciesid,"/",skip,"/",take)
+
+infor <- GET(call)
+pp_txt<-content(infor,
+                "text",encoding = "UTF-8")
+pp_json<-jsonlite::fromJSON(pp_txt,
+                            flatten = T)
+ppdf1<-as.data.frame(pp_json)
+
+# check if there are more than 1000 records and download them 
+call2 <- paste0(baseurl, "/",speciesid,"/",take,"/",take)
+infor <- GET(call2)
+pp_txt<-content(infor,
+                "text",encoding = "UTF-8")
+pp_json<-jsonlite::fromJSON(pp_txt,
+                            flatten = T)
+ppdf2<-as.data.frame(pp_json)
+
+easin.occs <- rbind(ppdf1,ppdf2)
+easin.occs$year <- as.numeric(easin.occs$Year)
+# filter occurrences for years < 2020 and with no metadata
+easin.occs <- easin.occs[easin.occs$year < 2021,]
+easin.occs <- easin.occs[!is.na(easin.occs$WKT),]
+#easin.occs <- easin.occs[!is.na(easin.occs$Reference),]
+
+ref.out <-unique(easin.occs[,c('Reference')])
+# write out References list to csv 
+write.csv(ref.out,paste0('results/',expname,'_','easin_references.csv'), row.names = FALSE)
+
+easin.occs<-vect(easin.occs, geom = 'WKT', crs = 'EPSG:4326')
+easin.p<-project(easin.occs,eckertIV)
+easin.p <- easin.p %>% select(year)
+easin.p <- rSDM::points2nearestcell(as(easin.p,'Spatial'), raster(envs.final$biozone), distance = sqrt(2)*res(envs.final)[1], showmap = F)
+easin.p <- vect(easin.p)
+
+# OBIS DOWNLOAD 
+# library(robis)
+# oc<-occurrence("Caulerpa cylindracea") 
+# write.csv(oc,file = paste0('data/',expname,"obis_fulldataset.csv"),row.names = F)
+# oc<-oc %>% 
+#   select(decimalLatitude, decimalLongitude,year)
+# oc<-oc %>% filter(year < 2021)
+# oc <- unique(oc)
+# obis.p <- vect(oc,geom = c('decimalLongitude','decimalLatitude'),crs = 'EPSG:4326')
+# obis.p <- project(obis.p, eckertIV)
+# obis.p <- rSDM::points2nearestcell(as(obis.p,'Spatial'), raster(envs.final$biozone), distance = sqrt(2)*res(envs.final)[1], showmap = F)
+# obis.p <- vect(obis.p)
+
+occs.final <- rbind(occs.p, easin.p, Boujadira.p, Ould.p)
