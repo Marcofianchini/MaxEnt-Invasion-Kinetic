@@ -31,13 +31,14 @@ file.edit(paste0(wd,'scripts/','model_tuning.R'))
 
 # SEE PERFORMANCES AND MODEL RANKING
 file.edit(paste0(wd,'scripts/','performance_and_ranking.R'))
+file.edit(paste0(wd,'scripts/','create_performance_plots.R'))
 
 # VARIABLE IMPORTANCE AND RESPONSES 
 file.edit(paste0(wd,'scripts/','compute_variable_importance.R'))
 file.edit(paste0(wd,'scripts/','compute_response_curves.R'))
 
 # MOBILITY ORIENTED PARITY ANALYSIS
-file.edit(paste0(wd,'scripts/','compute_mop_percentile_maps.R'))
+file.edit(paste0(wd,'scripts/','create_mop_percentile_maps.R'))
 
 # PCA SPACE PLOT 
 file.edit(paste0(wd,'scripts/','PCA_space_plot.R'))
