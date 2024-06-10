@@ -58,14 +58,10 @@ saveRDS(e.mx,paste0(wd,'results/',expname,'_','emx_final.rds'))
 source(paste0(wd,'scripts/','compute_omission_rate.R'))
 e.mx <- computeOmissionRate(truepres_envs_path = paste0(wd,'temp/',"rcmed_pres_envs.csv"), e.mx,is_weighted = F)
 e.mx <- computeOmissionRate(truepres_envs_path = paste0(wd,'temp/',"rcmed_pres_envs.csv"), e.mx,is_weighted = T,truepres_weights_path = paste0(wd,'temp/',"rcmed_pres_weights.csv"))
-e.mx@results$AUC.test.diff.avg<-    abs(e.mx@results$cv.AUC.avg-e.mx@results$test.AUC.avg)
-e.mx@results$wAUC.test.diff.avg<-   abs(e.mx@results$cv.wAUC.avg-e.mx@results$test.wAUC.avg)
-e.mx@results$weighted.auc.diff <-   abs(e.mx@results$test.AUC.avg - e.mx@results$test.wAUC.avg)
-e.mx@results$weighted.cbi.diff <-   abs(e.mx@results$test.CBI.avg - e.mx@results$test.wCBI.avg)
-e.mx@results$weighted.sedi.diff <-  abs(e.mx@results$test.SEDI.avg - e.mx@results$test.wSEDI.avg)
-e.mx@results$weighted.or10p.diff <- abs(e.mx@results$test_OR10p - e.mx@results$test_wOR10p)
  # save 
 saveRDS(e.mx, file = paste0(wd,'results/',expname,'_','emx_final.rds'))
+# write results to csv 
+write.csv(e.mx@results, file = paste0('results/',expname,'_','emx_results.csv'), row.names = F)
 
 #e.mx<- readRDS(paste0(wd,'results/',expname,'_','emx_final.rds')) # to re-read 
 
