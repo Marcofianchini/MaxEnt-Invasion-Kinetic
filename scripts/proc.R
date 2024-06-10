@@ -1,7 +1,12 @@
+# Partial ROC AUC analysis can be performed here too, but it is heavy and is (probably) better to do it later.
+# IF you want to perform it here, unquote the related lines in the script.
+
 
 proc <- function(vars) {
+  # for debug, unquote print(wd)
+  wd<- getwd()
+  #print(wd)
   # Definition of sediWeighted function, replacing the defunct 'enmSdm' package's version
-  
   sediWeighted <- function(
     pres,
     contrast,
@@ -116,12 +121,13 @@ proc <- function(vars) {
     sedi
     
   }
+  #######################################################################################################
   
   # if doesn't work, set manually the working directory as specified in the main.file 
-  wd<-"C:/Users/User/Documents/Rstudio/data_to_submit/"
+  #wd<- '/your-wd/
   
   k<-vars$k_num
-  print(k)   # for debug, uncomment to see if the cv.enm patch worked. it will print the fold values currently analyzed.
+  #print(k)   # for debug, uncomment to see if the cv.enm patch worked. it will print the fold values currently analyzed.
   model<-vars$mod.k
   # if k ==5 print a statement in a log file 
   if(k==5){
@@ -143,6 +149,7 @@ proc <- function(vars) {
   bg_k_weights<-read.csv(paste0(wd,'/temp/','final_bg.csv'))
   
   threshold_select <- "Maximum.training.sensitivity.plus.specificity.Cloglog.threshold"
+  #threshold_select <- "X10.percentile.training.presence.area"
   threshold_ix<- which(rnms==threshold_select)
   threshold <- model@results[threshold_ix]
   names(threshold)<- threshold_select
@@ -153,12 +160,13 @@ proc <- function(vars) {
   wAUC <- enmSdmX::evalAUC(pres = ppred, contrast = apred, presWeight = rcmed.pres.weights,contrastWeight = rcmed.abs.weights)
   SEDI <- sediWeighted(pres = ppred, contrast = apred, thresholds = threshold)
   wSEDI <- sediWeighted(pres = ppred, contrast = apred, presWeight = rcmed.pres.weights,contrastWeight = rcmed.abs.weights, thresholds = threshold)
+  # unquote here to perform pROC 
   # pROC-AUC-RATIO(heavy and sometimes fail. ensure it doesn't block the analysis)
-  #proc <- tryCatch({kuenm::kuenm_proc(ppred, c(vars$bg.train.pred, apred) , threshold = 10, iterations = 100)}, error = function(e){
-  #  #print('oh NO!')
-  #  return(NULL)})
-  #test.proc_auc_ratio <- ifelse(is.null(proc),rep(NA,length(SEDI)),proc$pROC_summary[1])
-  #test.proc_pval <- ifelse(is.null(proc),rep(NA,length(SEDI)),proc$pROC_summary[2])
+  proc <- tryCatch({kuenm::kuenm_proc(ppred, c(vars$bg.train.pred, apred) , threshold = 10, iterations = 100)}, error = function(e){
+    #print('oh NO!')
+    return(NULL)})
+  test.proc_auc_ratio <- ifelse(is.null(proc),rep(NA,length(SEDI)),proc$pROC_summary[1])
+  test.proc_pval <- ifelse(is.null(proc),rep(NA,length(SEDI)),proc$pROC_summary[2])
   
   out.test <- data.frame(
     test.SEDI= SEDI,
@@ -184,18 +192,19 @@ proc <- function(vars) {
   wSEDI <- sediWeighted(pres = ppred, contrast = apred, thresholds = threshold, presWeight = occ_k_weights[occ_k_weights$k==k,'weight'],contrastWeight = bg_k_weights[bg_k_weights$k==k,'weight'])
   wAUC.train <- enmSdmX::evalAUC(pres = vars$occs.train.pred, contrast = vars$bg.train.pred , presWeight = occ_k_weights[occ_k_weights$k != k, "weight"], contrastWeight = bg_k_weights[bg_k_weights$k != k, "weight"])
   wAUC.diff <- wAUC.train - wAUC
-  # pROC-AUC-RATIO(heavy and sometimes fail. ensure it doesn't block the analysis)
-  #cv.proc <- tryCatch({kuenm::kuenm_proc(vars$occs.val.pred, c(vars$bg.train.pred, vars$bg.val.pred), threshold = 10, iterations = 100)}, error = function(e){
-  #  #print('oh NO!')
-  #  return(NULL)})
-  #cv.proc_auc_ratio <- ifelse(is.null(cv.proc),rep(NA,length(SEDI)),cv.proc$pROC_summary[1])
-  #cv.proc_pval <- ifelse(is.null(cv.proc),rep(NA,length(SEDI)),cv.proc$pROC_summary[2])
+  
+  # unquote here to perform pROC
+  cv.proc <- tryCatch({kuenm::kuenm_proc(vars$occs.val.pred, c(vars$bg.train.pred, vars$bg.val.pred), threshold = 10, iterations = 100)}, error = function(e){
+    #print('oh NO!')
+    return(NULL)})
+  cv.proc_auc_ratio <- ifelse(is.null(cv.proc),rep(NA,length(SEDI)),cv.proc$pROC_summary[1])
+  cv.proc_pval <- ifelse(is.null(cv.proc),rep(NA,length(SEDI)),cv.proc$pROC_summary[2])
   
   
-  #prepare the final output
+  #prepare the final output (unquote the pROC variables if needed)
   out <- data.frame(
-    #cv.proc_auc_ratio = cv.proc_auc_ratio, 
-    #cv.proc_pval = cv.proc_pval,
+    cv.proc = cv.proc_auc_ratio, 
+    cv.proc.pval = cv.proc_pval,
     cv.AUC= AUC,
     cv.wAUC= wAUC,
     cv.wAUC.diff = wAUC.diff,
@@ -203,13 +212,13 @@ proc <- function(vars) {
     cv.wCBI = wCBI,
     cv.SEDI= SEDI,
     cv.wSEDI= wSEDI,
-    #test.proc_auc_ratio = test.proc_auc_ratio, 
-    #test.proc_pval = test.proc_pval,
+    t.proc = test.proc_auc_ratio, 
+    t.proc.pval = test.proc_pval,
     out.test,
     threshold_value = threshold,
     #threshold_name = threshold_select,
     row.names = NULL
   )
-  #print(head(out))
+  #print('done')
   return(out)
 }
