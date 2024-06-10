@@ -1,4 +1,4 @@
-##########################################################################################################################################################
+########################################################################################################################
 To reproduce the results in the article, open the file 'main_script.R' in the folder. Here you must set the working directory to this folder.
 Then follow the instructions of the script to perform the analysis step by step.
 Minor actions are (should be) required for the user and it will be indicated in the code when they are required.
