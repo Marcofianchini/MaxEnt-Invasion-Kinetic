@@ -1,6 +1,6 @@
 
 # load raw datasets
-rcmed.folder <- paste0(wd,'data/','dwca-rcmed_2001-2020-v1.1/')
+rcmed.folder <- paste0('data/','dwca-rcmed_2001-2020-v1.1/')
 extendedmeasurementorfact <- read.delim(paste0(rcmed.folder,"extendedmeasurementorfact.txt"))
 occurrence <- read.delim(paste0(rcmed.folder,"occurrence.txt"))
 event <- read.delim(paste0(rcmed.folder,"event.txt"))
@@ -90,20 +90,18 @@ for (i in 1:nrow(rcmed.occ.df)) {
 
 
 rcmed.occ.df<-rcmed.occ.df[!is.na(rcmed.occ.df$year),]
-occ.old<-rcmed.occ.df
-#occ.rcmed<-rcmed.occ.df[,c("decimalLongitude","decimalLatitude","year","measurementValue")]
-
 rcmed.occ.df<-rcmed.occ.df %>% select('decimalLongitude','decimalLatitude','year','measurementValue')
+
 rcmed.sp <- vect(rcmed.occ.df,geom = c('decimalLongitude','decimalLatitude'),crs = 'EPSG:4326')
 rcmed.p <- project(rcmed.sp,eckertIV)
 rcmed.df <- terra::extract(envs.final,rcmed.p, bind=T)
 rcmed.df <- na.omit(as.data.frame(rcmed.df,geom='XY'))[,c('x','y','year','measurementValue')]
 # flatten the presence and absences to sites, retaining the max value 
-write.csv(rcmed.df,paste0(wd,'data/',expname,'_',"rcmed_abundance.csv"),row.names = F)
+write.csv(rcmed.df,paste0('data/',expname,'_',"rcmed_abundance.csv"),row.names = F)
 rcmed.sp <- vect(rcmed.df,geom = c('x','y'),crs = eckertIV)
 rcmed.r <- terra::rasterize(rcmed.sp,envs.final,field='measurementValue',fun='max')
 rcmed.df <- as.data.frame(rcmed.r,xy=TRUE)
 colnames(rcmed.df)<-c('x','y','measurementValue')
-write.csv(rcmed.df,paste0(wd,'data/',expname,'_',"rcmed_abundance_compact.csv"),row.names = F)
+write.csv(rcmed.df,paste0('data/',expname,'_',"rcmed_abundance_compact.csv"),row.names = F)
 
 rcmed.points<-rcmed.df
