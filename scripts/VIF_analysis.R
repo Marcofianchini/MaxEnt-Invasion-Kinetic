@@ -1,10 +1,11 @@
 ############################################################################################################
 # this script perform the variable inflation factor (VIF) analysis to test for multicollinearity among continuous, environmental variables.
 #
+
 # Loading environmental variables from raster files
-envs <- terra::rast(paste0(wd, 'rasters/', 'present_raster.tif'))
+envs <- terra::rast(paste0(  'rasters/', 'present_raster.tif'))
 envs <- project(envs,eckertIV)
-bathymetry <- terra::rast(paste0(wd, 'rasters/', "coast_220m.tif"))
+bathymetry <- terra::rast(paste0(  'rasters/', "coast_220m.tif"))
 # Masking the environmental variables  
 envs <- terra::mask(envs, project(bathymetry, eckertIV))
 
@@ -13,35 +14,35 @@ envs.df <- as.data.frame(envs, na.rm = TRUE)
 
 # Performing variable inflation factor (VIF) analysis to test for multicollinearity among variables
 # Note: VIF analysis excludes categorical variables
-vif.results <- usdm::vifstep(envs.df, th = 2.5, size = Inf, keep = c('mean_KE','mean_nh4','mean_po4','mean_no3')) 
+vifs <- usdm::vif(envs.df, size = Inf)  # 
+vif.sort <- vifs[order(vifs$VIF, decreasing = F),]
+vif.sort
+vif.step <- usdm::vifstep(envs.df,th = 2.5,method = 'spearman', size = Inf)
+vif.step
+vif.cor <- usdm::vifcor(envs.df,th = 0.5, size = Inf)
+vif.cor
 
-# Outputting the VIF results to a text file
-sink(paste0(wd, 'results/',expname,'_', 'vif_results.txt'))
-print(vif.results)
-sink() # Stop diverting output to the file
-
-# Environmental variables with acceptable VIF scores
-variables.selected <- vif.results@results$Variables
+# variables to keep are chosen according to their VIF and their physiological importance for the species (see chapter 1.2)
+# selecting variables only on VIF or correlation criteria lead to models with lower predictive power
+variables.selected <- c('max_thetao','min_thetao','max_so','mean_po4','mean_nppv','min_KE')
 envs.final<- envs[[variables.selected]]
 vnm <- names(envs.final)
+envs.df <- as.data.frame(envs.final, na.rm = TRUE)
+vif.results <- usdm::vif(envs.df, size = Inf)  #
+# Outputting the VIF results to a text file
+sink(paste0('results/',expname,'_', 'vif_results.txt'))
+print(vif.results)
+sink() # 
 
 # Adding the substrate and biozone rasters to the final environmental variables raster
-substrate <- as.numeric(terra::rast(paste0(wd, 'rasters/', "substrate.tif")))
-biozone <- as.numeric(terra::rast(paste0(wd, 'rasters/', "biozone.tif")))
+substrate <- as.numeric(terra::rast(paste0(  'rasters/', "substrate.tif")))
+biozone <- as.numeric(terra::rast(paste0(  'rasters/', "biozone.tif")))
 names(substrate) <- 'substrate'
 names(biozone) <- 'biozone'
-substrate_legend <- read.csv(paste0(wd, 'results/',expname,'_', 'substrate_legend.csv'))
-biozone_legend <- read.csv(paste0(wd, 'results/',expname,'_', 'biozone_legend.csv'))
+substrate_legend <- read.csv(paste0(  'data/', 'substrate_legend.csv'))
+biozone_legend <- read.csv(paste0(  'data/', 'biozone_legend.csv'))
 envs.final<- c(envs.final,as.factor(as.numeric(biozone)),as.factor(as.numeric(substrate)))
 envs.final <- mask(envs.final, biozone)
 vnm<- vnm[!vnm %in% c('biozone','substrate')]
-writeRaster(envs.final, filename = paste0(wd, 'rasters/',expname,'_', 'envs.tif'), overwrite = TRUE)
+writeRaster(envs.final, filename = paste0(  'rasters/',expname,'_', 'envs.tif'), overwrite = TRUE)
 
-# Now that we have the variables, we can create the mean raster scenario for the future
-source(paste0(wd,'scripts/','create_mean_spatraster.R'))
-fut.cond <- createMeanSpatRaster(paste0(wd,'rasters/predictors/'),vnm, 2030,2050)
-fut.cond<-terra::project(fut.cond,envs.final)
-fut.cond<-mask(fut.cond,envs.final[[1]])
-fut.cond$biozone<- envs.final$biozone
-fut.cond$substrate<- envs.final$substrate
-writeRaster(fut.cond, filename = paste0(wd, 'rasters/',expname,'_', 'future3050_raster.tif'), overwrite = TRUE)
