@@ -1,5 +1,5 @@
 # Load and prepare some data
-med_mask<-rgdal::readOGR(paste0(wd,'shapefiles/',"med_mask.shp"))
+med_mask<-rgdal::readOGR(paste0('shapefiles/',"med_mask.shp"))
 med_mask<-terra::project(vect(med_mask),eckertIV)
 
 rast_poly <- as.polygons(present,dissolve=T, crs = eckertIV)
@@ -9,7 +9,7 @@ cl.names <- cats(present)[[1]][,2]
 class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow','bluishgreen','blue')])
 class_colors.n <- setNames(class_colors,cl.names)
 
-png(paste0(wd,'plots/','present_raster.png'), width = 1600, height = 900)
+png(paste0('plots/','present_raster.png'), width = 1600, height = 900)
 p3 <- ggplot(rast_poly, aes(fill = present)) +
   geom_spatvector(data = med_mask, color = 'black', fill = blues9[3], linewidth = 1) +
   geom_spatvector(data = rast_poly, aes(fill = present), color = NA) +
@@ -42,7 +42,7 @@ cl.names <- cats(present_upper)[[1]][,2]
 class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow','bluishgreen','blue')])
 class_colors.n <- setNames(class_colors,cl.names)
 
-png(paste0(wd,'plots/','present_upper_raster.png'), width = 1600, height = 900)
+png(paste0('plots/','present_upper_raster.png'), width = 1600, height = 900)
 p5 <- ggplot(rast_poly, aes(fill = present)) +
   geom_spatvector(data = med_mask, color = 'black', fill = blues9[3], linewidth = 1) +
   geom_spatvector(data = rast_poly, aes(fill = present), color = NA) +
@@ -77,7 +77,7 @@ class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow
 class_colors.n <- setNames(class_colors,cl.names)
 
 
-png(paste0(wd,'plots/','present_lower_raster.png'), width = 1600, height = 900)
+png(paste0('plots/','present_lower_raster.png'), width = 1600, height = 900)
 p1 <- ggplot(rast_poly, aes(fill = present)) +
   geom_spatvector(data = med_mask, color = 'black', fill = blues9[3], linewidth = 1) +
   geom_spatvector(data = rast_poly, aes(fill = present), color = NA) +
@@ -111,7 +111,7 @@ rast_poly$future <- factor(rast_poly$future, levels = c("high suitability", "med
 cl.names <- cats(present_upper)[[1]][,2]
 class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow','bluishgreen','blue')])
 class_colors.n <- setNames(class_colors,cl.names)
-png(paste0(wd,'plots/','future_upper_raster.png'), width = 1600, height = 900)
+png(paste0('plots/','future_upper_raster.png'), width = 1600, height = 900)
 p6 <- ggplot(rast_poly, aes(fill = future)) +
   geom_spatvector(data = med_mask, color = 'black', fill = blues9[3], linewidth = 1) +
   geom_spatvector(data = rast_poly, aes(fill = future), color = NA) +
@@ -144,7 +144,7 @@ rast_poly$future <- factor(rast_poly$future, levels = c("high suitability", "med
 cl.names <- cats(present_upper)[[1]][,2]
 class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow','bluishgreen','blue')])
 class_colors.n <- setNames(class_colors,cl.names)
-png(paste0(wd,'plots/','future_lower_raster.png'), width = 1600, height = 900)
+png(paste0('plots/','future_lower_raster.png'), width = 1600, height = 900)
 p2 <- ggplot(rast_poly, aes(fill = future)) +
   geom_spatvector(data = med_mask, color = 'black', fill = blues9[3], linewidth = 1) +
   geom_spatvector(data = rast_poly, aes(fill = future), color = NA) +
@@ -177,7 +177,7 @@ rast_poly$future <- factor(rast_poly$future, levels = c("high suitability", "med
 cl.names <- cats(present_upper)[[1]][,2]
 class_colors <- rev(palette.colors(palette = "Okabe-Ito")[c('vermillion','yellow','bluishgreen','blue')])
 class_colors.n <- setNames(class_colors,cl.names)
-png(paste0(wd,'plots/','future_raster.png'), width = 1600, height = 900)
+png(paste0('plots/','future_raster.png'), width = 1600, height = 900)
 p4 <- ggplot(rast_poly, aes(fill = future)) +
   geom_spatvector(data = med_mask, color = 'black', fill = blues9[3], linewidth = 1) +
   geom_spatvector(data = rast_poly, aes(fill = future), color = NA) +
