@@ -22,3 +22,5 @@ Actions that will be performed are:
 14) Compute future projections 
 15) Map classification, stationarity and trend analysis 
 
+Zenodo DOI: 
+https://doi.org/10.5281/zenodo.15591725
